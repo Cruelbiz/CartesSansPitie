@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 262 83% 58%; /* Purple-500 */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 60 4.8% 95.9%;
+  --secondary-foreground: 24 9.8% 10%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+  
+  /* Game specific colors */
+  --game-red: 0 76% 58%; /* #E53E3E */
+  --game-blue: 213 70% 44%; /* #2B6CB0 */
+  --game-yellow: 45 93% 66%; /* #F6E05E */
+  --game-green: 146 62% 55%; /* #48BB78 */
+  --card-dark: 210 100% 6%; /* #1A202C */
+  --card-light: 210 17% 98%; /* #F7FAFC */
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom animations for cards */
+@keyframes card-flip {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+
+@keyframes card-deal {
+  0% { 
+    transform: translateX(-100px) rotate(-10deg); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateX(0) rotate(0deg); 
+    opacity: 1; 
+  }
+}
+
+@keyframes bounce-in {
+  0% { 
+    transform: scale(0.3); 
+    opacity: 0; 
+  }
+  50% { 
+    transform: scale(1.05); 
+  }
+  70% { 
+    transform: scale(0.9); 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+}
+
+@keyframes slide-up {
+  0% { 
+    transform: translateY(20px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+.animate-card-flip {
+  animation: card-flip 0.6s ease-in-out;
+}
+
+.animate-card-deal {
+  animation: card-deal 0.8s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+/* Custom game colors */
+.bg-game-red {
+  background-color: hsl(var(--game-red));
+}
+
+.bg-game-blue {
+  background-color: hsl(var(--game-blue));
+}
+
+.bg-game-yellow {
+  background-color: hsl(var(--game-yellow));
+}
+
+.bg-game-green {
+  background-color: hsl(var(--game-green));
+}
+
+.bg-card-dark {
+  background-color: hsl(var(--card-dark));
+}
+
+.bg-card-light {
+  background-color: hsl(var(--card-light));
+}
+
+.text-game-red {
+  color: hsl(var(--game-red));
+}
+
+.text-game-blue {
+  color: hsl(var(--game-blue));
+}
+
+.text-game-yellow {
+  color: hsl(var(--game-yellow));
+}
+
+.text-game-green {
+  color: hsl(var(--game-green));
+}
+
+.text-card-dark {
+  color: hsl(var(--card-dark));
+}
+
+.border-game-red {
+  border-color: hsl(var(--game-red));
+}
+
+.border-game-blue {
+  border-color: hsl(var(--game-blue));
+}
+
+.border-game-yellow {
+  border-color: hsl(var(--game-yellow));
+}
+
+.border-game-green {
+  border-color: hsl(var(--game-green));
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .game-card {
+    min-height: 100px;
+  }
+  
+  .game-card p {
+    font-size: 0.875rem;
+  }
+}
+
+/* Custom scrollbar for card areas */
+.card-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.card-area::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.card-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.card-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
