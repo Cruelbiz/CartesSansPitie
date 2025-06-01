@@ -85,8 +85,17 @@ export class MemStorage implements IStorage {
   async createGame(game: InsertGame): Promise<Game> {
     const id = this.currentGameId++;
     const newGame: Game = {
-      ...game,
       id,
+      gameCode: game.gameCode,
+      hostId: game.hostId,
+      maxPlayers: game.maxPlayers || 6,
+      winningScore: game.winningScore || 5,
+      currentRound: game.currentRound || 1,
+      currentJudgeIndex: game.currentJudgeIndex || 0,
+      gamePhase: game.gamePhase || "setup",
+      questionCard: game.questionCard || null,
+      submittedAnswers: game.submittedAnswers || [],
+      isActive: game.isActive !== undefined ? game.isActive : true,
       createdAt: new Date(),
     };
     this.games.set(game.gameCode, newGame);
@@ -114,8 +123,14 @@ export class MemStorage implements IStorage {
   async addPlayer(player: InsertPlayer): Promise<Player> {
     const id = this.currentPlayerId++;
     const newPlayer: Player = {
-      ...player,
       id,
+      gameId: player.gameId || null,
+      name: player.name,
+      sessionId: player.sessionId,
+      score: player.score || 0,
+      hand: player.hand || [],
+      isJudge: player.isJudge || false,
+      hasSubmitted: player.hasSubmitted || false,
       joinedAt: new Date(),
     };
     this.players.set(id, newPlayer);
