@@ -86,9 +86,12 @@ async function handleBotJudging(gameCode: string) {
             )
           );
           
-          // Set next judge
-          const nextJudgeIndex = (game.currentJudgeIndex + 1) % allPlayers.length;
-          await storage.updatePlayer(allPlayers[nextJudgeIndex].id, { isJudge: true });
+          // Set winner as next judge
+          await storage.updatePlayer(winningSubmission.playerId, { isJudge: true });
+          
+          // Update current judge index to reflect the winner's position
+          const winnerIndex = allPlayers.findIndex(p => p.id === winningSubmission.playerId);
+          const nextJudgeIndex = winnerIndex !== -1 ? winnerIndex : 0;
           
           // Get new question if not game over
           let newQuestionCard = null;
@@ -387,10 +390,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         )
       );
       
-      // Set next judge (get fresh player list after reset)
+      // Set winner as next judge (get fresh player list after reset)
       const refreshedPlayers = await storage.getGamePlayers(game.id);
-      const nextJudgeIndex = (game.currentJudgeIndex + 1) % refreshedPlayers.length;
-      await storage.updatePlayer(refreshedPlayers[nextJudgeIndex].id, { isJudge: true });
+      await storage.updatePlayer(winningSubmission.playerId, { isJudge: true });
+      
+      // Update current judge index to reflect the winner's position
+      const winnerIndex = refreshedPlayers.findIndex(p => p.id === winningSubmission.playerId);
+      const nextJudgeIndex = winnerIndex !== -1 ? winnerIndex : 0;
       
       // Get new question if not game over
       let newQuestionCard = null;
