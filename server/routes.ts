@@ -8,6 +8,42 @@ function generateGameCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Handle bot submissions automatically
+async function handleBotSubmissions(game: any) {
+  const players = await storage.getGamePlayers(game.id);
+  const bots = players.filter(p => p.sessionId.startsWith('bot_') && !p.isJudge && !p.hasSubmitted);
+  const questionCard = game.questionCard as any;
+  const requiredCards = questionCard?.blanks || 1;
+
+  for (const bot of bots) {
+    // Select random cards from bot's hand
+    const hand = bot.hand as any[] || [];
+    const shuffled = [...hand].sort(() => 0.5 - Math.random());
+    const selectedCards = shuffled.slice(0, requiredCards);
+
+    // Update bot as submitted
+    await storage.updatePlayer(bot.id, { hasSubmitted: true });
+
+    // Add to submitted answers
+    const submittedAnswers = game.submittedAnswers as any[] || [];
+    submittedAnswers.push({
+      playerId: bot.id,
+      playerName: bot.name,
+      cards: selectedCards,
+    });
+
+    // Check if all players have submitted
+    const allPlayers = await storage.getGamePlayers(game.id);
+    const nonJudgePlayers = allPlayers.filter(p => !p.isJudge);
+    const submittedCount = submittedAnswers.length;
+
+    await storage.updateGame(game.gameCode, {
+      submittedAnswers,
+      gamePhase: submittedCount === nonJudgePlayers.length ? "judging" : "playing",
+    });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new game
   app.post("/api/games", async (req, res) => {
@@ -205,10 +241,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const nonJudgePlayers = players.filter(p => !p.isJudge);
       const submittedCount = submittedAnswers.length;
       
-      const updatedGame = await storage.updateGame(gameCode, {
+      let updatedGame = await storage.updateGame(gameCode, {
         submittedAnswers,
         gamePhase: submittedCount === nonJudgePlayers.length ? "judging" : "playing",
       });
+      
+      // Auto-submit for bots if needed
+      if (updatedGame && updatedGame.gamePhase === "playing") {
+        await handleBotSubmissions(updatedGame);
+        updatedGame = await storage.getGame(gameCode);
+      }
       
       res.json(updatedGame);
     } catch (error) {
