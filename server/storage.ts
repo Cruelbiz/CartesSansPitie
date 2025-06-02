@@ -19,6 +19,8 @@ export interface IStorage {
   getAnswerCards(): Promise<AnswerCard[]>;
   getRandomQuestionCard(gameCode?: string): Promise<QuestionCard | undefined>;
   getRandomAnswerCards(count: number, gameCode?: string): Promise<AnswerCard[]>;
+  removeCardsFromPlayerHand(playerId: number, cardIds: number[]): Promise<void>;
+  refillPlayerHand(playerId: number, gameCode: string): Promise<void>;
 
   // Bot methods
   addBotsToGame(gameId: number, botCount: number): Promise<Player[]>;
@@ -208,6 +210,29 @@ export class MemStorage implements IStorage {
     }
     
     return selectedCards;
+  }
+
+  async removeCardsFromPlayerHand(playerId: number, cardIds: number[]): Promise<void> {
+    const player = this.players.get(playerId);
+    if (player && player.hand) {
+      const hand = player.hand as AnswerCard[];
+      const newHand = hand.filter(card => !cardIds.includes(card.id));
+      await this.updatePlayer(playerId, { hand: newHand });
+    }
+  }
+
+  async refillPlayerHand(playerId: number, gameCode: string): Promise<void> {
+    const player = this.players.get(playerId);
+    if (!player) return;
+    
+    const currentHand = player.hand as AnswerCard[] || [];
+    const cardsNeeded = 7 - currentHand.length;
+    
+    if (cardsNeeded > 0) {
+      const newCards = await this.getRandomAnswerCards(cardsNeeded, gameCode);
+      const newHand = [...currentHand, ...newCards];
+      await this.updatePlayer(playerId, { hand: newHand });
+    }
   }
 
   async addBotsToGame(gameId: number, botCount: number): Promise<Player[]> {

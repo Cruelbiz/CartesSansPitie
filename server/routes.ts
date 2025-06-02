@@ -21,6 +21,11 @@ async function handleBotSubmissions(game: any) {
     const shuffled = [...hand].sort(() => 0.5 - Math.random());
     const selectedCards = shuffled.slice(0, requiredCards);
 
+    // Remove selected cards from bot's hand and refill
+    const cardIds = selectedCards.map((card: any) => card.id);
+    await storage.removeCardsFromPlayerHand(bot.id, cardIds);
+    await storage.refillPlayerHand(bot.id, game.gameCode);
+
     // Update bot as submitted
     await storage.updatePlayer(bot.id, { hasSubmitted: true });
 
@@ -300,6 +305,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (game.gamePhase !== "playing") {
         return res.status(400).json({ error: "Game is not in playing phase" });
       }
+      
+      // Remove selected cards from player's hand and refill
+      const cardIds = selectedCards.map((card: any) => card.id);
+      await storage.removeCardsFromPlayerHand(playerId, cardIds);
+      await storage.refillPlayerHand(playerId, gameCode);
       
       const player = await storage.updatePlayer(playerId, {
         hasSubmitted: true,
