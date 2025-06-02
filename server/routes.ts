@@ -64,8 +64,12 @@ async function handleBotJudging(gameCode: string) {
           const winningSubmission = submittedAnswers[randomWinnerIndex];
           
           // Award point to winning player
+          const botGamePlayers = await storage.getGamePlayers(game.id);
+          const botCurrentWinningPlayer = botGamePlayers.find(p => p.id === winningSubmission.playerId);
+          if (!botCurrentWinningPlayer) return;
+          
           const winningPlayer = await storage.updatePlayer(winningSubmission.playerId, {
-            score: (await storage.getGamePlayers(game.id)).find(p => p.id === winningSubmission.playerId)!.score + 1,
+            score: botCurrentWinningPlayer.score + 1,
           });
           
           // Check if game is over
@@ -359,18 +363,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid winning submission" });
       }
       
-      // Award point to winning player
+      // Get current players state and award point to winning player
+      const currentPlayers = await storage.getGamePlayers(game.id);
+      const currentWinningPlayer = currentPlayers.find(p => p.id === winningSubmission.playerId);
+      if (!currentWinningPlayer) {
+        return res.status(404).json({ error: "Winning player not found" });
+      }
+      
       const winningPlayer = await storage.updatePlayer(winningSubmission.playerId, {
-        score: (await storage.getGamePlayers(game.id)).find(p => p.id === winningSubmission.playerId)!.score + 1,
+        score: currentWinningPlayer.score + 1,
       });
       
       // Check if game is over
       const isGameOver = winningPlayer!.score >= game.winningScore;
       
       // Reset for next round
-      const players = await storage.getGamePlayers(game.id);
       await Promise.all(
-        players.map(player => 
+        currentPlayers.map(player => 
           storage.updatePlayer(player.id, {
             hasSubmitted: false,
             isJudge: false,
@@ -378,9 +387,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         )
       );
       
-      // Set next judge
-      const nextJudgeIndex = (game.currentJudgeIndex + 1) % players.length;
-      await storage.updatePlayer(players[nextJudgeIndex].id, { isJudge: true });
+      // Set next judge (get fresh player list after reset)
+      const refreshedPlayers = await storage.getGamePlayers(game.id);
+      const nextJudgeIndex = (game.currentJudgeIndex + 1) % refreshedPlayers.length;
+      await storage.updatePlayer(refreshedPlayers[nextJudgeIndex].id, { isJudge: true });
       
       // Get new question if not game over
       let newQuestionCard = null;
