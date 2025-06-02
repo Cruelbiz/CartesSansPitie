@@ -216,7 +216,8 @@ export class MemStorage implements IStorage {
     
     // Find the game to get the gameCode
     let gameCode: string | undefined;
-    for (const [code, game] of this.games.entries()) {
+    const gamesArray = Array.from(this.games.entries());
+    for (const [code, game] of gamesArray) {
       if (game.id === gameId) {
         gameCode = code;
         break;
