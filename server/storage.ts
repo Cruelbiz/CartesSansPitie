@@ -18,6 +18,9 @@ export interface IStorage {
   getAnswerCards(): Promise<AnswerCard[]>;
   getRandomQuestionCard(): Promise<QuestionCard | undefined>;
   getRandomAnswerCards(count: number): Promise<AnswerCard[]>;
+
+  // Bot methods
+  addBotsToGame(gameId: number, botCount: number): Promise<Player[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -27,12 +30,24 @@ export class MemStorage implements IStorage {
   private answerCards: AnswerCard[];
   private currentGameId: number;
   private currentPlayerId: number;
+  private botNames: string[];
 
   constructor() {
     this.games = new Map();
     this.players = new Map();
     this.currentGameId = 1;
     this.currentPlayerId = 1;
+    
+    // Bot names for solo play
+    this.botNames = [
+      "Capitaine Sarcasme",
+      "Maître Blague",
+      "Professeur Humour",
+      "Docteur Rire",
+      "Comique Bot",
+      "Sir Ironie",
+      "Lady Moquerie"
+    ];
     
     // Initialize with French cards
     this.questionCards = [
@@ -172,6 +187,31 @@ export class MemStorage implements IStorage {
   async getRandomAnswerCards(count: number): Promise<AnswerCard[]> {
     const shuffled = [...this.answerCards].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
+  }
+
+  async addBotsToGame(gameId: number, botCount: number): Promise<Player[]> {
+    const bots: Player[] = [];
+    const availableBotNames = [...this.botNames];
+    
+    for (let i = 0; i < Math.min(botCount, availableBotNames.length); i++) {
+      const randomIndex = Math.floor(Math.random() * availableBotNames.length);
+      const botName = availableBotNames.splice(randomIndex, 1)[0];
+      
+      const hand = await this.getRandomAnswerCards(7);
+      const bot = await this.addPlayer({
+        gameId,
+        name: botName,
+        sessionId: `bot_${this.currentPlayerId}`,
+        score: 0,
+        hand,
+        isJudge: false,
+        hasSubmitted: false,
+      });
+      
+      bots.push(bot);
+    }
+    
+    return bots;
   }
 }
 

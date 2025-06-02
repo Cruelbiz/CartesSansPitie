@@ -17,6 +17,7 @@ interface GameSetupProps {
   onCreateGame: (config: { maxPlayers: number; winningScore: number }) => void;
   onJoinGame: (gameCode: string, name: string) => void;
   onStartGame: () => void;
+  onAddBots: () => void;
   gameData?: GameWithPlayers;
   currentPlayer?: Player | null;
   isCreating: boolean;
@@ -29,6 +30,7 @@ export default function GameSetup({
   onCreateGame,
   onJoinGame,
   onStartGame,
+  onAddBots,
   gameData,
   currentPlayer,
   isCreating,
@@ -165,11 +167,21 @@ export default function GameSetup({
                 ) : (
                   <div className="text-center">
                     <p className="text-gray-600 mb-2">
-                      {gameData.players.length < 3
-                        ? `Il faut au moins 3 joueurs pour commencer (${3 - gameData.players.length} manquant${3 - gameData.players.length > 1 ? 's' : ''})`
+                      {gameData.players.length < 2
+                        ? `Il faut au moins 2 joueurs pour commencer (${2 - gameData.players.length} manquant${2 - gameData.players.length > 1 ? 's' : ''})`
                         : "Seul l'hôte peut démarrer la partie"
                       }
                     </p>
+                    {gameData.players.length >= 1 && isHost && (
+                      <Button
+                        onClick={onAddBots}
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-6 py-4 mb-2"
+                      >
+                        <Plus className="mr-2" />
+                        Ajouter des bots
+                      </Button>
+                    )}
                     <Button variant="outline" disabled size="lg">
                       <Play className="mr-2" />
                       En attente...

@@ -115,6 +115,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add bots to game
+  app.post("/api/games/:gameCode/add-bots", async (req, res) => {
+    try {
+      const { gameCode } = req.params;
+      const { botCount } = req.body;
+      
+      const game = await storage.getGame(gameCode);
+      if (!game) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+      
+      const existingPlayers = await storage.getGamePlayers(game.id);
+      const availableSlots = game.maxPlayers - existingPlayers.length;
+      const botsToAdd = Math.min(botCount || 2, availableSlots);
+      
+      const bots = await storage.addBotsToGame(game.id, botsToAdd);
+      
+      res.json({ bots, message: `${bots.length} bots ajoutés à la partie` });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add bots" });
+    }
+  });
+
   // Start game
   app.post("/api/games/:gameCode/start", async (req, res) => {
     try {
@@ -126,8 +149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const players = await storage.getGamePlayers(game.id);
-      if (players.length < 3) {
-        return res.status(400).json({ error: "Need at least 3 players to start" });
+      if (players.length < 2) {
+        return res.status(400).json({ error: "Need at least 2 players to start" });
       }
       
       // Get random question card

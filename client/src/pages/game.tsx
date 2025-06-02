@@ -180,6 +180,33 @@ export default function Game() {
     }
   };
 
+  const addBotsMutation = useMutation({
+    mutationFn: async (gameCode: string) => {
+      const res = await apiRequest("POST", `/api/games/${gameCode}/add-bots`, { botCount: 2 });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/games", currentGameCode] });
+      toast({
+        title: "Bots ajoutés !",
+        description: "2 bots ont rejoint la partie",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter les bots",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddBots = () => {
+    if (currentGameCode) {
+      addBotsMutation.mutate(currentGameCode);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-red-500 flex items-center justify-center">
@@ -195,6 +222,7 @@ export default function Game() {
         onCreateGame={handleCreateGame}
         onJoinGame={handleJoinGame}
         onStartGame={handleStartGame}
+        onAddBots={handleAddBots}
         gameData={gameData}
         currentPlayer={currentPlayer}
         isCreating={createGameMutation.isPending}
