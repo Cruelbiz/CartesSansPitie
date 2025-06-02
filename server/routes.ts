@@ -406,6 +406,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save current round to history
       const currentHistory = game.roundHistory as any[] || [];
+      const allPlayersForJudge = await storage.getGamePlayers(game.id);
+      const currentJudge = allPlayersForJudge.find(p => p.isJudge);
       const roundRecord = {
         round: game.currentRound,
         questionCard: game.questionCard,
@@ -415,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           playerName: winningSubmission.playerName,
           cards: winningSubmission.cards
         },
-        judge: currentJudge.name
+        judge: currentJudge?.name || "Inconnu"
       };
       
       // Update current judge index to reflect the winner's position

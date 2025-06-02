@@ -31,6 +31,7 @@ export default function GameBoard({
 }: GameBoardProps) {
   const [selectedCards, setSelectedCards] = useState<AnswerCard[]>([]);
   const [selectedWinnerIndex, setSelectedWinnerIndex] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const currentJudge = gameData.players.find(p => p.isJudge);
   const isCurrentPlayerJudge = currentPlayer?.isJudge || false;
@@ -79,6 +80,68 @@ export default function GameBoard({
             </div>
           </div>
           <div className="flex items-center space-x-6">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  Historique
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Historique des Tours</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {(gameData.roundHistory as any[])?.length > 0 ? (
+                    (gameData.roundHistory as any[]).map((round: any, index: number) => (
+                      <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-bold text-lg">Tour {round.round}</h3>
+                          <Badge variant="secondary">Juge: {round.judge}</Badge>
+                        </div>
+                        <div className="mb-3">
+                          <p className="font-medium text-gray-700">Question:</p>
+                          <p className="text-gray-900">{round.questionCard?.text}</p>
+                        </div>
+                        <div className="mb-3">
+                          <p className="font-medium text-green-700">Gagnant: {round.winner?.playerName}</p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {round.winner?.cards?.map((card: any, cardIndex: number) => (
+                              <span key={cardIndex} className="bg-green-100 px-2 py-1 rounded text-sm">
+                                {card.text}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-700 mb-2">Toutes les réponses:</p>
+                          <div className="space-y-2">
+                            {round.submittedAnswers?.map((submission: any, subIndex: number) => (
+                              <div key={subIndex} className={`p-2 rounded ${submission.playerId === round.winner?.playerId ? 'bg-green-100' : 'bg-gray-100'}`}>
+                                <p className="font-medium">{submission.playerName}:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {submission.cards?.map((card: any, cardIndex: number) => (
+                                    <span key={cardIndex} className="bg-white px-2 py-1 rounded text-sm">
+                                      {card.text}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">Aucun tour terminé pour le moment</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
             <div className="text-white text-center hidden md:block">
               <div className="text-lg font-bold">Tour {gameData.currentRound}</div>
               <div className="text-sm opacity-80">sur {gameData.winningScore} pts</div>
