@@ -72,6 +72,7 @@ export class MemStorage implements IStorage {
       submittedAnswers: game.submittedAnswers || [],
       usedQuestionCardIds: [],
       usedAnswerCardIds: [],
+      roundHistory: [],
       isActive: game.isActive !== undefined ? game.isActive : true,
       createdAt: new Date(),
     };

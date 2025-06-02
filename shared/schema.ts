@@ -15,6 +15,7 @@ export const games = pgTable("games", {
   submittedAnswers: jsonb("submitted_answers").default([]),
   usedQuestionCardIds: jsonb("used_question_card_ids").default([]), // Array of used question card IDs
   usedAnswerCardIds: jsonb("used_answer_card_ids").default([]), // Array of used answer card IDs
+  roundHistory: jsonb("round_history").default([]), // Array of completed rounds
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

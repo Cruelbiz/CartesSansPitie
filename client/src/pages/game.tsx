@@ -191,15 +191,15 @@ export default function Game() {
   };
 
   const addBotsMutation = useMutation({
-    mutationFn: async (gameCode: string) => {
-      const res = await apiRequest("POST", `/api/games/${gameCode}/add-bots`, { botCount: 2 });
+    mutationFn: async ({ gameCode, botCount }: { gameCode: string; botCount: number }) => {
+      const res = await apiRequest("POST", `/api/games/${gameCode}/add-bots`, { botCount });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/games", currentGameCode] });
       toast({
         title: "Bots ajoutés !",
-        description: "2 bots ont rejoint la partie",
+        description: data.message || "Les bots ont rejoint la partie",
       });
     },
     onError: () => {
@@ -211,9 +211,9 @@ export default function Game() {
     },
   });
 
-  const handleAddBots = () => {
+  const handleAddBots = (botCount: number) => {
     if (currentGameCode) {
-      addBotsMutation.mutate(currentGameCode);
+      addBotsMutation.mutate({ gameCode: currentGameCode, botCount });
     }
   };
 

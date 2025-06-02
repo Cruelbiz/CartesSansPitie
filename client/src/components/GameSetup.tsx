@@ -17,7 +17,7 @@ interface GameSetupProps {
   onCreateGame: (config: { maxPlayers: number; winningScore: number }) => void;
   onJoinGame: (gameCode: string, name: string) => void;
   onStartGame: () => void;
-  onAddBots: () => void;
+  onAddBots: (botCount: number) => void;
   gameData?: GameWithPlayers;
   currentPlayer?: Player | null;
   isCreating: boolean;
@@ -43,6 +43,7 @@ export default function GameSetup({
   const [playerName, setPlayerName] = useState("");
   const [joinGameCode, setJoinGameCode] = useState("");
   const [showJoinForm, setShowJoinForm] = useState(false);
+  const [botCount, setBotCount] = useState(2);
 
   const handleCreateGame = () => {
     onCreateGame({ maxPlayers, winningScore });
@@ -173,14 +174,31 @@ export default function GameSetup({
                       }
                     </p>
                     {gameData.players.length >= 1 && isHost && (
-                      <Button
-                        onClick={onAddBots}
-                        size="lg"
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-6 py-4 mb-2"
-                      >
-                        <Plus className="mr-2" />
-                        Ajouter des bots
-                      </Button>
+                      <div className="mb-4">
+                        <Label htmlFor="botCount" className="text-sm font-medium text-gray-700 mb-2 block">
+                          Nombre de bots à ajouter
+                        </Label>
+                        <Select value={botCount.toString()} onValueChange={(value) => setBotCount(parseInt(value))}>
+                          <SelectTrigger className="w-full mb-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1 bot</SelectItem>
+                            <SelectItem value="2">2 bots</SelectItem>
+                            <SelectItem value="3">3 bots</SelectItem>
+                            <SelectItem value="4">4 bots</SelectItem>
+                            <SelectItem value="5">5 bots</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          onClick={() => onAddBots(botCount)}
+                          size="lg"
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold px-6 py-4 w-full"
+                        >
+                          <Plus className="mr-2" />
+                          Ajouter {botCount} bot{botCount > 1 ? 's' : ''}
+                        </Button>
+                      </div>
                     )}
                     <Button variant="outline" disabled size="lg">
                       <Play className="mr-2" />

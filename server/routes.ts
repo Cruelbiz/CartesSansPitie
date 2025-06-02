@@ -404,6 +404,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const refreshedPlayers = await storage.getGamePlayers(game.id);
       await storage.updatePlayer(winningSubmission.playerId, { isJudge: true });
       
+      // Save current round to history
+      const currentHistory = game.roundHistory as any[] || [];
+      const roundRecord = {
+        round: game.currentRound,
+        questionCard: game.questionCard,
+        submittedAnswers: game.submittedAnswers,
+        winner: {
+          playerId: winningSubmission.playerId,
+          playerName: winningSubmission.playerName,
+          cards: winningSubmission.cards
+        },
+        judge: currentJudge.name
+      };
+      
       // Update current judge index to reflect the winner's position
       const winnerIndex = refreshedPlayers.findIndex(p => p.id === winningSubmission.playerId);
       const nextJudgeIndex = winnerIndex !== -1 ? winnerIndex : 0;
@@ -420,6 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentRound: game.currentRound + 1,
         questionCard: newQuestionCard,
         submittedAnswers: [],
+        roundHistory: [...currentHistory, roundRecord]
       });
       
       // Auto-submit for bots in new round
