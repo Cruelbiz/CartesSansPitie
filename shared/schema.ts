@@ -44,6 +44,7 @@ export const answerCards = pgTable("answer_cards", {
 
 export const insertGameSchema = createInsertSchema(games).omit({
   id: true,
+  gameCode: true,
   createdAt: true,
 });
 
