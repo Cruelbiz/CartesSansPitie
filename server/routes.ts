@@ -44,6 +44,74 @@ async function handleBotSubmissions(game: any) {
   }
 }
 
+// Handle bot judge decisions automatically
+async function handleBotJudging(gameCode: string) {
+  const game = await storage.getGame(gameCode);
+  if (!game || game.gamePhase !== "judging") return;
+  
+  const players = await storage.getGamePlayers(game.id);
+  const currentJudge = players.find(p => p.isJudge);
+  
+  if (currentJudge && currentJudge.sessionId.startsWith('bot_')) {
+    // Bot judge selects random winning submission
+    const submittedAnswers = game.submittedAnswers as any[] || [];
+    if (submittedAnswers.length > 0) {
+      const randomWinnerIndex = Math.floor(Math.random() * submittedAnswers.length);
+      
+      // Simulate judge selection API call
+      setTimeout(async () => {
+        try {
+          const winningSubmission = submittedAnswers[randomWinnerIndex];
+          
+          // Award point to winning player
+          const winningPlayer = await storage.updatePlayer(winningSubmission.playerId, {
+            score: (await storage.getGamePlayers(game.id)).find(p => p.id === winningSubmission.playerId)!.score + 1,
+          });
+          
+          // Check if game is over
+          const isGameOver = winningPlayer!.score >= game.winningScore;
+          
+          // Reset for next round
+          const allPlayers = await storage.getGamePlayers(game.id);
+          await Promise.all(
+            allPlayers.map(player => 
+              storage.updatePlayer(player.id, {
+                hasSubmitted: false,
+                isJudge: false,
+              })
+            )
+          );
+          
+          // Set next judge
+          const nextJudgeIndex = (game.currentJudgeIndex + 1) % allPlayers.length;
+          await storage.updatePlayer(allPlayers[nextJudgeIndex].id, { isJudge: true });
+          
+          // Get new question if not game over
+          let newQuestionCard = null;
+          if (!isGameOver) {
+            newQuestionCard = await storage.getRandomQuestionCard();
+          }
+          
+          let updatedGame = await storage.updateGame(gameCode, {
+            gamePhase: isGameOver ? "ended" : "playing",
+            currentJudgeIndex: nextJudgeIndex,
+            currentRound: game.currentRound + 1,
+            questionCard: newQuestionCard,
+            submittedAnswers: [],
+          });
+          
+          // Auto-submit for bots in new round
+          if (!isGameOver && updatedGame) {
+            await handleBotSubmissions(updatedGame);
+          }
+        } catch (error) {
+          console.error("Bot judging error:", error);
+        }
+      }, 2000); // 2 second delay to simulate thinking
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new game
   app.post("/api/games", async (req, res) => {
@@ -192,12 +260,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get random question card
       const questionCard = await storage.getRandomQuestionCard();
       
-      const updatedGame = await storage.updateGame(gameCode, {
+      let updatedGame = await storage.updateGame(gameCode, {
         gamePhase: "playing",
         questionCard,
         submittedAnswers: [],
         currentRound: 1,
       });
+      
+      // Auto-submit for bots at the start
+      if (updatedGame) {
+        await handleBotSubmissions(updatedGame);
+        updatedGame = await storage.getGame(gameCode);
+      }
       
       res.json(updatedGame);
     } catch (error) {
@@ -250,6 +324,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updatedGame && updatedGame.gamePhase === "playing") {
         await handleBotSubmissions(updatedGame);
         updatedGame = await storage.getGame(gameCode);
+      }
+      
+      // Check if bot should judge
+      if (updatedGame && updatedGame.gamePhase === "judging") {
+        handleBotJudging(gameCode);
       }
       
       res.json(updatedGame);
@@ -309,13 +388,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newQuestionCard = await storage.getRandomQuestionCard();
       }
       
-      const updatedGame = await storage.updateGame(gameCode, {
+      let updatedGame = await storage.updateGame(gameCode, {
         gamePhase: isGameOver ? "ended" : "playing",
         currentJudgeIndex: nextJudgeIndex,
         currentRound: game.currentRound + 1,
         questionCard: newQuestionCard,
         submittedAnswers: [],
       });
+      
+      // Auto-submit for bots in new round
+      if (!isGameOver && updatedGame) {
+        await handleBotSubmissions(updatedGame);
+        updatedGame = await storage.getGame(gameCode);
+      }
       
       res.json({ game: updatedGame, winner: winningPlayer });
     } catch (error) {
