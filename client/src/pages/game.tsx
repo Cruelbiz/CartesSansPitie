@@ -29,6 +29,16 @@ export default function Game() {
     refetchInterval: 2000, // Poll for updates
   });
 
+  // Update current player from game data
+  useEffect(() => {
+    if (gameData && currentPlayer) {
+      const updatedPlayer = gameData.players.find(p => p.id === currentPlayer.id);
+      if (updatedPlayer) {
+        setCurrentPlayer(updatedPlayer);
+      }
+    }
+  }, [gameData, currentPlayer?.id]);
+
   const createGameMutation = useMutation({
     mutationFn: async (gameConfig: { maxPlayers: number; winningScore: number; hostId: string }) => {
       const res = await apiRequest("POST", "/api/games", gameConfig);
