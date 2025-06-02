@@ -21,6 +21,10 @@ export default function Game() {
   // Fetch game data if we have a game code
   const { data: gameData, isLoading } = useQuery<GameWithPlayers>({
     queryKey: ["/api/games", currentGameCode],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/games/${currentGameCode}`);
+      return res.json();
+    },
     enabled: !!currentGameCode,
     refetchInterval: 2000, // Poll for updates
   });
