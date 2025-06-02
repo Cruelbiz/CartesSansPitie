@@ -1,4 +1,5 @@
 import { games, players, questionCards, answerCards, type Game, type Player, type QuestionCard, type AnswerCard, type InsertGame, type InsertPlayer } from "@shared/schema";
+import { QUESTION_CARDS, ANSWER_CARDS } from "../client/src/lib/gameData";
 
 export interface IStorage {
   // Game methods
@@ -16,8 +17,8 @@ export interface IStorage {
   // Card methods
   getQuestionCards(): Promise<QuestionCard[]>;
   getAnswerCards(): Promise<AnswerCard[]>;
-  getRandomQuestionCard(): Promise<QuestionCard | undefined>;
-  getRandomAnswerCards(count: number): Promise<AnswerCard[]>;
+  getRandomQuestionCard(gameCode?: string): Promise<QuestionCard | undefined>;
+  getRandomAnswerCards(count: number, gameCode?: string): Promise<AnswerCard[]>;
 
   // Bot methods
   addBotsToGame(gameId: number, botCount: number): Promise<Player[]>;
@@ -49,55 +50,12 @@ export class MemStorage implements IStorage {
       "Lady Moquerie"
     ];
     
-    // Initialize with French cards
-    this.questionCards = [
-      { id: 1, text: "La chose la plus embarrassante que j'ai faite pour _____ c'est _____.", blanks: 2, category: "general" },
-      { id: 2, text: "_____ + _____ = le combo parfait pour ruiner une soirée.", blanks: 2, category: "general" },
-      { id: 3, text: "Maman, pourquoi il y a _____ dans mon _____ ?", blanks: 2, category: "general" },
-      { id: 4, text: "_____ : c'est ce qui manquait à ma vie pour être vraiment pathétique.", blanks: 1, category: "general" },
-      { id: 5, text: "Comment j'ai découvert que _____ et _____ ne font pas bon ménage.", blanks: 2, category: "general" },
-      { id: 6, text: "Mon pire cauchemar ? _____.", blanks: 1, category: "general" },
-      { id: 7, text: "Le secret de ma réussite ? _____.", blanks: 1, category: "general" },
-      { id: 8, text: "_____ : parfait pour impressionner belle-maman.", blanks: 1, category: "general" },
-      { id: 9, text: "Qu'est-ce qui rend _____ si irrésistible ?", blanks: 1, category: "general" },
-      { id: 10, text: "Lors de mon dernier rendez-vous galant, j'ai été surpris par _____.", blanks: 1, category: "general" },
-    ];
-
-    this.answerCards = [
-      { id: 1, text: "de l'argent et ma dignité", category: "general" },
-      { id: 2, text: "mes économies", category: "general" },
-      { id: 3, text: "un pingouin unijambiste", category: "general" },
-      { id: 4, text: "pleurer en position fœtale", category: "general" },
-      { id: 5, text: "ma belle-mère en maillot de bain", category: "general" },
-      { id: 6, text: "une vidéo YouTube qui dure 3 heures", category: "general" },
-      { id: 7, text: "faire semblant d'être un expert", category: "general" },
-      { id: 8, text: "des chaussettes sales", category: "general" },
-      { id: 9, text: "mon ex en réunion Zoom", category: "general" },
-      { id: 10, text: "un sandwich au nutella périmé", category: "general" },
-      { id: 11, text: "danser nu devant mon miroir", category: "general" },
-      { id: 12, text: "mes photos de profil Tinder", category: "general" },
-      { id: 13, text: "un cours de yoga pour chats", category: "general" },
-      { id: 14, text: "mes recherches Google à 3h du matin", category: "general" },
-      { id: 15, text: "mon patron en slip de bain", category: "general" },
-      { id: 16, text: "une collection de figurines de licornes", category: "general" },
-      { id: 17, text: "des tacos qui se battent", category: "general" },
-      { id: 18, text: "une licorne dépressive", category: "general" },
-      { id: 19, text: "des pâtes qui parlent", category: "general" },
-      { id: 20, text: "le WiFi de ma grand-mère", category: "general" },
-      { id: 21, text: "un chat en costard", category: "general" },
-      { id: 22, text: "ma dignité perdue", category: "general" },
-      { id: 23, text: "des chaussettes qui sentent le fromage", category: "general" },
-      { id: 24, text: "une moustache de hipster", category: "general" },
-      { id: 25, text: "mon ex qui mange des céréales", category: "general" },
-      { id: 26, text: "un tatouage de ma grand-mère", category: "general" },
-      { id: 27, text: "pleurer en regardant des vidéos de chatons", category: "general" },
-      { id: 28, text: "mon historique de recherche Google", category: "general" },
-      { id: 29, text: "une passion secrète pour les romans à l'eau de rose", category: "general" },
-      { id: 30, text: "mentionner mon ex 47 fois pendant le repas", category: "general" },
-    ];
+    // Initialize with 100 question cards and 300 answer cards
+    this.questionCards = QUESTION_CARDS;
+    this.answerCards = ANSWER_CARDS;
   }
 
-  async createGame(game: InsertGame): Promise<Game> {
+  async createGame(game: InsertGame & { gameCode: string }): Promise<Game> {
     const id = this.currentGameId++;
     const newGame: Game = {
       id,
@@ -110,6 +68,8 @@ export class MemStorage implements IStorage {
       gamePhase: game.gamePhase || "setup",
       questionCard: game.questionCard || null,
       submittedAnswers: game.submittedAnswers || [],
+      usedQuestionCardIds: [],
+      usedAnswerCardIds: [],
       isActive: game.isActive !== undefined ? game.isActive : true,
       createdAt: new Date(),
     };
@@ -178,15 +138,76 @@ export class MemStorage implements IStorage {
     return this.answerCards;
   }
 
-  async getRandomQuestionCard(): Promise<QuestionCard | undefined> {
+  async getRandomQuestionCard(gameCode?: string): Promise<QuestionCard | undefined> {
     if (this.questionCards.length === 0) return undefined;
-    const randomIndex = Math.floor(Math.random() * this.questionCards.length);
-    return this.questionCards[randomIndex];
+    
+    let availableCards = this.questionCards;
+    
+    // Filter out used cards for this game
+    if (gameCode) {
+      const game = this.games.get(gameCode);
+      if (game && game.usedQuestionCardIds) {
+        const usedIds = Array.isArray(game.usedQuestionCardIds) ? game.usedQuestionCardIds : [];
+        availableCards = this.questionCards.filter(card => !usedIds.includes(card.id));
+      }
+    }
+    
+    if (availableCards.length === 0) return undefined;
+    
+    const randomIndex = Math.floor(Math.random() * availableCards.length);
+    const selectedCard = availableCards[randomIndex];
+    
+    // Mark card as used for this game
+    if (gameCode && selectedCard) {
+      const game = this.games.get(gameCode);
+      if (game) {
+        const usedIds = Array.isArray(game.usedQuestionCardIds) ? game.usedQuestionCardIds : [];
+        const updatedGame = {
+          ...game,
+          usedQuestionCardIds: [...usedIds, selectedCard.id]
+        };
+        this.games.set(gameCode, updatedGame);
+      }
+    }
+    
+    return selectedCard;
   }
 
-  async getRandomAnswerCards(count: number): Promise<AnswerCard[]> {
-    const shuffled = [...this.answerCards].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+  async getRandomAnswerCards(count: number, gameCode?: string): Promise<AnswerCard[]> {
+    let availableCards = this.answerCards;
+    
+    // Filter out used cards for this game
+    if (gameCode) {
+      const game = this.games.get(gameCode);
+      if (game && game.usedAnswerCardIds) {
+        const usedIds = Array.isArray(game.usedAnswerCardIds) ? game.usedAnswerCardIds : [];
+        availableCards = this.answerCards.filter(card => !usedIds.includes(card.id));
+      }
+    }
+    
+    if (availableCards.length < count) {
+      // If not enough cards available, return what we have
+      count = availableCards.length;
+    }
+    
+    const shuffled = [...availableCards].sort(() => 0.5 - Math.random());
+    const selectedCards = shuffled.slice(0, count);
+    
+    // Mark cards as used for this game
+    if (gameCode && selectedCards.length > 0) {
+      const game = this.games.get(gameCode);
+      if (game) {
+        const usedIds = Array.isArray(game.usedAnswerCardIds) ? game.usedAnswerCardIds : [];
+        const newUsedIds = selectedCards.map(card => card.id);
+        const updatedGame = {
+          ...game,
+          usedAnswerCardIds: [...usedIds, ...newUsedIds]
+        };
+        this.games.set(gameCode, updatedGame);
+      }
+    }
+    
+    return selectedCards;
   }
 
   async addBotsToGame(gameId: number, botCount: number): Promise<Player[]> {

@@ -13,6 +13,8 @@ export const games = pgTable("games", {
   gamePhase: text("game_phase").notNull().default("setup"), // setup, playing, judging, results, ended
   questionCard: jsonb("question_card"),
   submittedAnswers: jsonb("submitted_answers").default([]),
+  usedQuestionCardIds: jsonb("used_question_card_ids").default([]), // Array of used question card IDs
+  usedAnswerCardIds: jsonb("used_answer_card_ids").default([]), // Array of used answer card IDs
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
