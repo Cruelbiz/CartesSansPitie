@@ -3,7 +3,7 @@ import { QUESTION_CARDS, ANSWER_CARDS } from "../client/src/lib/gameData";
 
 export interface IStorage {
   // Game methods
-  createGame(game: InsertGame): Promise<Game>;
+  createGame(game: InsertGame & { gameCode: string }): Promise<Game>;
   getGame(gameCode: string): Promise<Game | undefined>;
   updateGame(gameCode: string, updates: Partial<Game>): Promise<Game | undefined>;
   deleteGame(gameCode: string): Promise<boolean>;
@@ -214,11 +214,21 @@ export class MemStorage implements IStorage {
     const bots: Player[] = [];
     const availableBotNames = [...this.botNames];
     
+    // Find the game to get the gameCode
+    let gameCode: string | undefined;
+    for (const [code, game] of this.games.entries()) {
+      if (game.id === gameId) {
+        gameCode = code;
+        break;
+      }
+    }
+    
     for (let i = 0; i < Math.min(botCount, availableBotNames.length); i++) {
       const randomIndex = Math.floor(Math.random() * availableBotNames.length);
       const botName = availableBotNames.splice(randomIndex, 1)[0];
       
-      const hand = await this.getRandomAnswerCards(7);
+      // Get unused answer cards for this game
+      const hand = await this.getRandomAnswerCards(7, gameCode);
       const bot = await this.addPlayer({
         gameId,
         name: botName,

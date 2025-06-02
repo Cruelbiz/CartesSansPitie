@@ -96,7 +96,7 @@ async function handleBotJudging(gameCode: string) {
           // Get new question if not game over
           let newQuestionCard = null;
           if (!isGameOver) {
-            newQuestionCard = await storage.getRandomQuestionCard();
+            newQuestionCard = await storage.getRandomQuestionCard(gameCode);
           }
           
           let updatedGame = await storage.updateGame(gameCode, {
@@ -264,8 +264,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Need at least 2 players to start" });
       }
       
-      // Get random question card
-      const questionCard = await storage.getRandomQuestionCard();
+      // Get random question card that hasn't been used in this game
+      const questionCard = await storage.getRandomQuestionCard(gameCode);
       
       let updatedGame = await storage.updateGame(gameCode, {
         gamePhase: "playing",
@@ -401,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get new question if not game over
       let newQuestionCard = null;
       if (!isGameOver) {
-        newQuestionCard = await storage.getRandomQuestionCard();
+        newQuestionCard = await storage.getRandomQuestionCard(gameCode);
       }
       
       let updatedGame = await storage.updateGame(gameCode, {
